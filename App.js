@@ -7,98 +7,93 @@ const COLORS = ['#e74c3c', '#8e44ad', '#3498db', '#27ae60', '#f1c40f', '#d35400'
 
 const App = () => {
   const [drawingMode, setDrawingMode] = useState(false);
-  const [start, setStart] = useState(null);
-  const [areaPoints, setAreaPoints] = useState([]);
-  const [areaName, setAreaName] = useState('');
-  const [areaColor, setAreaColor] = useState(COLORS[0]);
+  const [area, setArea] = useState({
+    start: null,
+    points: [],
+    name: '',
+    color: COLORS[0],
+  });
   const [areas, setAreas] = useState([]);
 
   const handleDrawArea = () => {
-    if (drawingMode) {
-      setDrawingMode(false);
-    } else {
-      setDrawingMode(true);
-    }
+    setDrawingMode(!drawingMode);
   };
 
   const handleMarkerPress = (index) => {
     if (drawingMode && index !== 0) {
-      const newAreaPoints = [...areaPoints];
+      const newAreaPoints = [...area.points];
       newAreaPoints.splice(index, 1);
-      setAreaPoints(newAreaPoints);
+      setArea({ ...area, points: newAreaPoints });
     }
   };
 
   const handleMarkerDrag = (coordinate, index) => {
     if (drawingMode) {
-      const newAreaPoints = [...areaPoints];
+      const newAreaPoints = [...area.points];
       if (index === 0) {
-        setStart(coordinate);
-        newAreaPoints[0] = coordinate;
+        setArea({ ...area, start: coordinate, points: newAreaPoints });
       } else {
         newAreaPoints[index] = coordinate;
+        setArea({ ...area, points: newAreaPoints });
       }
-      setAreaPoints(newAreaPoints);
     }
   };
 
   const handleMapPress = ({ nativeEvent: { coordinate } }) => {
     if (drawingMode) {
-      if (!start) {
-        setStart(coordinate);
-        setAreaPoints([coordinate]);
+      if (!area.start) {
+        setArea({ ...area, start: coordinate, points: [coordinate] });
       } else {
-        const newAreaPoints = [...areaPoints];
+        const newAreaPoints = [...area.points];
         newAreaPoints.push(coordinate);
-        setAreaPoints(newAreaPoints);
+        setArea({ ...area, points: newAreaPoints });
       }
     }
   };
 
-  const handleReturnToBase = () => {
-    if (drawingMode) {
-      setStart(null);
-      setAreaPoints([]);
-      setDrawingMode(false);
-    }
+  const handleClearArea = () => {
+    setArea({ ...area, start: null, points: [] });
   };
 
   const handleSaveArea = () => {
-    if (areaPoints.length >= 3 && areaName !== '') {
+    if (area.points.length >= 3 && area.name !== '') {
       const newArea = {
-        name: areaName,
-        points: areaPoints,
-        color: areaColor,
+        name: area.name,
+        points: area.points,
+        color: area.color,
       };
 
       setAreas([...areas, newArea]);
-      setAreaName('');
-      setAreaColor(COLORS[0]);
-      setStart(null);
-      setAreaPoints([]);
+      setArea({ start: null, points: [], name: '', color: COLORS[0] });
       setDrawingMode(false);
     }
   };
 
   const handleEditArea = (index) => {
-    const area = areas[index];
-    setAreaName(area.name);
-    setAreaColor(area.color);
+    const selectedArea = areas[index];
+    setArea({
+      start: null,
+      points: selectedArea.points,
+      name: selectedArea.name,
+      color: selectedArea.color,
+    });
     setDrawingMode(true);
-    setAreaPoints(area.points);
     setAreas(areas.filter((_, i) => i !== index));
   };
 
   const handleTurnOnRobot = () => {
     // Lógica para ligar o robô
+    // Adicione aqui a lógica para enviar os comandos para o robô através da placa ESP32
   };
 
   const handleTurnOffRobot = () => {
     // Lógica para desligar o robô
+    // Adicione aqui a lógica para enviar os comandos para o robô através da placa ESP32
   };
 
   const handleGoToBase = () => {
     // Lógica para fazer o robô voltar à base
+    // Adicione aqui a lógica para enviar os comandos para o robô através da placa ESP32
   };
 
   return (
@@ -109,15 +104,15 @@ const App = () => {
         </TouchableOpacity>
         {drawingMode && (
           <>
-            <TouchableOpacity style={[styles.button, { backgroundColor: '#e74c3c' }]} onPress={handleReturnToBase}>
-              <Text style={styles.buttonText}>Cancelar</Text>
+            <TouchableOpacity style={[styles.button, { backgroundColor: '#e74c3c' }]} onPress={handleClearArea}>
+              <Text style={styles.buttonText}>Limpar Área</Text>
             </TouchableOpacity>
             <Text style={styles.label}>Nome da Área:</Text>
             <TextInput
               style={styles.input}
               placeholder="Digite o nome da área"
-              value={areaName}
-              onChangeText={(text) => setAreaName(text)}
+              value={area.name}
+              onChangeText={(text) => setArea({ ...area, name: text })}
             />
             <Text style={styles.label}>Cor da Área:</Text>
             <View style={styles.colorPalette}>
@@ -125,7 +120,7 @@ const App = () => {
                 <TouchableOpacity
                   key={index}
                   style={[styles.colorSwatch, { backgroundColor: color }]}
-                  onPress={() => setAreaColor(color)}
+                  onPress={() => setArea({ ...area, color })}
                 />
               ))}
             </View>
@@ -169,14 +164,14 @@ const App = () => {
           onPress={handleMapPress}
           mapType="satellite"
         >
-          {start && (
+          {area.start && (
             <Marker
-              coordinate={start}
+              coordinate={area.start}
               draggable={true}
               onDrag={(e) => handleMarkerDrag(e.nativeEvent.coordinate, 0)}
             />
           )}
-          {areaPoints.map((point, index) => (
+          {area.points.map((point, index) => (
             <Marker
               key={index}
               coordinate={point}
@@ -185,11 +180,11 @@ const App = () => {
               onDrag={(e) => handleMarkerDrag(e.nativeEvent.coordinate, index + 1)}
             />
           ))}
-          {areaPoints.length >= 3 && (
+          {area.points.length >= 3 && (
             <Polygon
-              coordinates={areaPoints}
-              strokeColor={areaColor}
-              fillColor={areaColor + '40'} // Adiciona transparência (alfa) à cor
+              coordinates={area.points}
+              strokeColor={area.color}
+              fillColor={area.color + '40'} // Adiciona transparência (alfa) à cor
               strokeWidth={2}
             />
           )}
