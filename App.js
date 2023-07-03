@@ -1,88 +1,44 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, TextInput, FlatList } from 'react-native';
+import React, { useState } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, TextInput, FlatList } from 'react-native';
 import MapView, { Marker, Polygon } from 'react-native-maps';
-import * as Location from 'expo-location';
 import * as Animatable from 'react-native-animatable';
 
-const COLORS = [
-  'rgba(255, 0, 0, 0.4)',
-  'rgba(0, 255, 0, 0.4)',
-  'rgba(0, 0, 255, 0.4)',
-  'rgba(255, 255, 0, 0.4)',
-  'rgba(255, 0, 255, 0.4)',
-  'rgba(0, 255, 255, 0.4)',
-  'rgba(128, 0, 0, 0.4)',
-  'rgba(0, 128, 0, 0.4)',
-];
+const COLORS = ['#e74c3c', '#8e44ad', '#3498db', '#27ae60', '#f1c40f', '#d35400', '#2c3e50', '#95a5a6'];
 
 const App = () => {
   const [drawingMode, setDrawingMode] = useState(false);
   const [start, setStart] = useState(null);
   const [areaPoints, setAreaPoints] = useState([]);
-  const [areas, setAreas] = useState([]);
-  const [currentLocation, setCurrentLocation] = useState(null);
-  const [areaWidth, setAreaWidth] = useState(null);
-  const [areaHeight, setAreaHeight] = useState(null);
   const [areaName, setAreaName] = useState('');
   const [areaColor, setAreaColor] = useState(COLORS[0]);
-
-  useEffect(() => {
-    const getLocation = async () => {
-      let { status } = await Location.requestForegroundPermissionsAsync();
-
-      if (status === 'granted') {
-        let location = await Location.getCurrentPositionAsync({});
-        setCurrentLocation(location.coords);
-      } else if (status === 'denied') {
-        console.log('Permissão de localização negada');
-      } else if (status === 'undetermined') {
-        console.log('Permissão de localização não solicitada anteriormente');
-      }
-    };
-
-    getLocation();
-  }, []);
-
-  useEffect(() => {
-    if (areaPoints.length >= 3) {
-      const width = Math.abs(areaPoints[1].latitude - areaPoints[0].latitude) * 111000; // Convertendo a diferença em latitude para metros
-      const height = Math.abs(areaPoints[1].longitude - areaPoints[0].longitude) * 111000; // Convertendo a diferença em longitude para metros
-      setAreaWidth(width);
-      setAreaHeight(height);
-    } else {
-      setAreaWidth(null);
-      setAreaHeight(null);
-    }
-  }, [areaPoints]);
+  const [areas, setAreas] = useState([]);
 
   const handleDrawArea = () => {
-    setDrawingMode(!drawingMode);
-    setAreaPoints([]);
-  };
-
-  const handleMarkerPress = (markerIndex) => {
     if (drawingMode) {
-      if (markerIndex === 0) {
-        setStart(null);
-        setAreaPoints([]);
-      } else if (markerIndex === areaPoints.length - 1) {
-        const newAreaPoints = [...areaPoints];
-        newAreaPoints.pop();
-        setAreaPoints(newAreaPoints);
-      }
+      setDrawingMode(false);
+    } else {
+      setDrawingMode(true);
     }
   };
 
-  const handleMarkerDrag = (coordinate, markerIndex) => {
+  const handleMarkerPress = (index) => {
+    if (drawingMode && index !== 0) {
+      const newAreaPoints = [...areaPoints];
+      newAreaPoints.splice(index, 1);
+      setAreaPoints(newAreaPoints);
+    }
+  };
+
+  const handleMarkerDrag = (coordinate, index) => {
     if (drawingMode) {
-      if (markerIndex === 0) {
+      const newAreaPoints = [...areaPoints];
+      if (index === 0) {
         setStart(coordinate);
-      } else if (markerIndex === areaPoints.length - 1) {
-        const newAreaPoints = [...areaPoints];
-        newAreaPoints.pop();
-        newAreaPoints.push(coordinate);
-        setAreaPoints(newAreaPoints);
+        newAreaPoints[0] = coordinate;
+      } else {
+        newAreaPoints[index] = coordinate;
       }
+      setAreaPoints(newAreaPoints);
     }
   };
 
@@ -118,7 +74,9 @@ const App = () => {
       setAreas([...areas, newArea]);
       setAreaName('');
       setAreaColor(COLORS[0]);
-      handleReturnToBase();
+      setStart(null);
+      setAreaPoints([]);
+      setDrawingMode(false);
     }
   };
 
@@ -131,6 +89,18 @@ const App = () => {
     setAreas(areas.filter((_, i) => i !== index));
   };
 
+  const handleTurnOnRobot = () => {
+    // Lógica para ligar o robô
+  };
+
+  const handleTurnOffRobot = () => {
+    // Lógica para desligar o robô
+  };
+
+  const handleGoToBase = () => {
+    // Lógica para fazer o robô voltar à base
+  };
+
   return (
     <View style={styles.container}>
       <Animatable.View animation="fadeInLeft" duration={500} style={styles.sidebar}>
@@ -139,14 +109,15 @@ const App = () => {
         </TouchableOpacity>
         {drawingMode && (
           <>
-            <TouchableOpacity style={styles.button} onPress={handleReturnToBase}>
-              <Text style={styles.buttonText}>Retornar à Base</Text>
+            <TouchableOpacity style={[styles.button, { backgroundColor: '#e74c3c' }]} onPress={handleReturnToBase}>
+              <Text style={styles.buttonText}>Cancelar</Text>
             </TouchableOpacity>
+            <Text style={styles.label}>Nome da Área:</Text>
             <TextInput
               style={styles.input}
-              placeholder="Nome da Área"
+              placeholder="Digite o nome da área"
               value={areaName}
-              onChangeText={setAreaName}
+              onChangeText={(text) => setAreaName(text)}
             />
             <Text style={styles.label}>Cor da Área:</Text>
             <View style={styles.colorPalette}>
@@ -158,15 +129,14 @@ const App = () => {
                 />
               ))}
             </View>
-            <TouchableOpacity style={styles.button} onPress={handleSaveArea}>
-              <Text style={styles.buttonText}>Salvar Área</Text>
-            </TouchableOpacity>
           </>
         )}
+        <TouchableOpacity style={[styles.button, { backgroundColor: '#2ecc71' }]} onPress={handleSaveArea}>
+          <Text style={styles.buttonText}>Salvar Área</Text>
+        </TouchableOpacity>
         <Text style={styles.label}>Áreas Salvas:</Text>
         <FlatList
           data={areas}
-          keyExtractor={(item, index) => index.toString()}
           renderItem={({ item, index }) => (
             <TouchableOpacity
               style={[styles.areaItem, { backgroundColor: item.color }]}
@@ -175,23 +145,23 @@ const App = () => {
               <Text style={styles.areaItemText}>{item.name}</Text>
             </TouchableOpacity>
           )}
+          keyExtractor={(item, index) => index.toString()}
         />
+        <TouchableOpacity style={[styles.button, { backgroundColor: '#27ae60' }]} onPress={handleTurnOnRobot}>
+          <Text style={styles.buttonText}>Ligar Robô</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, { backgroundColor: '#e74c3c' }]} onPress={handleTurnOffRobot}>
+          <Text style={styles.buttonText}>Desligar Robô</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.button, { backgroundColor: '#f1c40f' }]} onPress={handleGoToBase}>
+          <Text style={styles.buttonText}>Voltar à Base</Text>
+        </TouchableOpacity>
       </Animatable.View>
       <View style={styles.mapContainer}>
-        <MapView
-          style={styles.map}
-          onPress={handleMapPress}
-          initialRegion={{
-            latitude: -15.6336, // Latitude de Planaltina
-            longitude: -47.6036, // Longitude de Planaltina
-            latitudeDelta: 0.0922,
-            longitudeDelta: 0.0421,
-          }}
-        >
+        <MapView style={styles.map} onPress={handleMapPress}>
           {start && (
             <Marker
               coordinate={start}
-              onPress={() => handleMarkerPress(0)}
               draggable={true}
               onDrag={(e) => handleMarkerDrag(e.nativeEvent.coordinate, 0)}
             />
@@ -209,19 +179,20 @@ const App = () => {
             <Polygon
               coordinates={areaPoints}
               strokeColor={areaColor}
-              fillColor={areaColor}
+              fillColor={areaColor + '40'} // Adiciona transparência (alfa) à cor
               strokeWidth={2}
-              fillOpacity={0.4}
             />
           )}
+          {areas.map((area, index) => (
+            <Polygon
+              key={index}
+              coordinates={area.points}
+              strokeColor={area.color}
+              fillColor={area.color + '40'} // Adiciona transparência (alfa) à cor
+              strokeWidth={2}
+            />
+          ))}
         </MapView>
-        {areaWidth && areaHeight && (
-          <View style={styles.areaDimensions}>
-            <Text style={styles.areaDimensionsText}>
-              Largura: {areaWidth.toFixed(2)} metros | Altura: {areaHeight.toFixed(2)} metros
-            </Text>
-          </View>
-        )}
       </View>
     </View>
   );
@@ -266,37 +237,21 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   colorSwatch: {
-    width: 30,
-    height: 30,
+    width: 20,
+    height: 20,
+    borderRadius: 5,
     margin: 5,
-    borderRadius: 15,
   },
   mapContainer: {
     flex: 4,
   },
   map: {
-    flex: 1,
-  },
-  areaDimensions: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    backgroundColor: '#fff',
-    padding: 10,
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: '#ccc',
-  },
-  areaDimensionsText: {
-    textAlign: 'center',
-    fontWeight: 'bold',
+    ...StyleSheet.absoluteFillObject,
   },
   areaItem: {
-    backgroundColor: '#ccc',
     padding: 10,
     borderRadius: 5,
-    marginBottom: 10,
+    marginBottom: 5,
   },
   areaItemText: {
     color: '#fff',
