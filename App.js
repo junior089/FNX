@@ -158,7 +158,17 @@ const App = () => {
         </TouchableOpacity>
       </Animatable.View>
       <View style={styles.mapContainer}>
-        <MapView style={styles.map} onPress={handleMapPress}>
+        <MapView
+          style={styles.map}
+          initialRegion={{
+            latitude: -15.6014105,
+            longitude: -47.7097587,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          }}
+          onPress={handleMapPress}
+          mapType="satellite"
+        >
           {start && (
             <Marker
               coordinate={start}
@@ -183,15 +193,6 @@ const App = () => {
               strokeWidth={2}
             />
           )}
-          {areas.map((area, index) => (
-            <Polygon
-              key={index}
-              coordinates={area.points}
-              strokeColor={area.color}
-              fillColor={area.color + '40'} // Adiciona transparência (alfa) à cor
-              strokeWidth={2}
-            />
-          ))}
         </MapView>
       </View>
     </View>
@@ -207,11 +208,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     paddingHorizontal: 20,
-    paddingTop: 40,
+    paddingVertical: 40,
   },
   button: {
     backgroundColor: '#3498db',
-    padding: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
     borderRadius: 5,
     marginBottom: 10,
   },
@@ -220,33 +222,26 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 5,
-    padding: 10,
-    marginBottom: 10,
-  },
   label: {
+    marginTop: 10,
     fontWeight: 'bold',
-    marginBottom: 5,
+  },
+  input: {
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    padding: 5,
+    marginBottom: 10,
   },
   colorPalette: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     marginBottom: 10,
   },
   colorSwatch: {
-    width: 20,
-    height: 20,
-    borderRadius: 5,
-    margin: 5,
-  },
-  mapContainer: {
-    flex: 4,
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginRight: 5,
   },
   areaItem: {
     padding: 10,
@@ -257,6 +252,12 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  mapContainer: {
+    flex: 4,
+  },
+  map: {
+    flex: 1,
   },
 });
 
