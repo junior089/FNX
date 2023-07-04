@@ -14,6 +14,7 @@ const App = () => {
     color: COLORS[0],
   });
   const [areas, setAreas] = useState([]);
+  const [manualMode, setManualMode] = useState(false);
 
   const handleDrawArea = () => {
     setDrawingMode(!drawingMode);
@@ -91,8 +92,19 @@ const App = () => {
     // Adicione aqui a lógica para enviar os comandos para o robô através da placa ESP32
   };
 
-  const handleGoToBase = () => {
-    // Lógica para fazer o robô voltar à base
+  const handleToggleWaterPumps = () => {
+    // Lógica para ligar/desligar as bombas d'água do robô
+    // Adicione aqui a lógica para enviar os comandos para o robô através da placa ESP32
+  };
+
+  const handleMoveRobot = (direction) => {
+    // Lógica para mover o robô
+    // Adicione aqui a lógica para enviar os comandos para o robô através da placa ESP32
+  };
+
+  const handleJoystickMove = (x, y) => {
+    // Lógica para controlar o robô usando o joystick
+    // 'x' e 'y' representam a posição do joystick (-1 a 1)
     // Adicione aqui a lógica para enviar os comandos para o robô através da placa ESP32
   };
 
@@ -142,57 +154,104 @@ const App = () => {
           )}
           keyExtractor={(item, index) => index.toString()}
         />
+        {!manualMode ? (
+          <TouchableOpacity style={[styles.button, { backgroundColor: '#f1c40f' }]} onPress={() => setManualMode(true)}>
+            <Text style={styles.buttonText}>Controlar Manualmente</Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.joystickContainer}>
+            <View style={styles.joystick}>
+              <TouchableOpacity
+                style={styles.joystickButton}
+                onPress={() => handleMoveRobot('forward')}
+              ></TouchableOpacity>
+              <View style={styles.joystickAxis}>
+                <TouchableOpacity
+                  style={styles.joystickButton}
+                  onPress={() => handleMoveRobot('left')}
+                ></TouchableOpacity>
+                <View style={styles.joystickCenter}>
+                  <TouchableOpacity
+                    style={styles.joystickButton}
+                    onPress={() => handleMoveRobot('stop')}
+                  ></TouchableOpacity>
+                </View>
+                <TouchableOpacity
+                  style={styles.joystickButton}
+                  onPress={() => handleMoveRobot('right')}
+                ></TouchableOpacity>
+              </View>
+              <TouchableOpacity
+                style={styles.joystickButton}
+                onPress={() => handleMoveRobot('backward')}
+              ></TouchableOpacity>
+            </View>
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: '#e74c3c' }]}
+              onPress={() => setManualMode(false)}
+            >
+              <Text style={styles.buttonText}>Voltar</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <TouchableOpacity style={[styles.button, { backgroundColor: '#27ae60' }]} onPress={handleTurnOnRobot}>
           <Text style={styles.buttonText}>Ligar Robô</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, { backgroundColor: '#e74c3c' }]} onPress={handleTurnOffRobot}>
           <Text style={styles.buttonText}>Desligar Robô</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, { backgroundColor: '#f1c40f' }]} onPress={handleGoToBase}>
-          <Text style={styles.buttonText}>Voltar à Base</Text>
+        <TouchableOpacity style={[styles.button, { backgroundColor: '#3498db' }]} onPress={handleToggleWaterPumps}>
+          <Text style={styles.buttonText}>Ligar/Desligar Bombas d'Água</Text>
         </TouchableOpacity>
       </Animatable.View>
-      <View style={styles.mapContainer}>
-        <MapView
-          style={styles.map}
-          initialRegion={{
-            latitude: -15.6014105,
-            longitude: -47.7097587,
-            latitudeDelta: 0.01,
-            longitudeDelta: 0.01,
-          }}
-          onPress={handleMapPress}
-          mapType="satellite"
-        >
-          {area.start && (
+      <MapView
+        style={styles.map}
+        onPress={handleMapPress}
+        initialRegion={{
+          latitude: -15.619886,
+          longitude: -47.650523,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421,
+        }}
+        mapType="hybrid" // Set mapType to "satellite"
+      >
+        {areas.map((item, index) => (
+          <Polygon
+            key={index}
+            coordinates={item.points}
+            strokeColor="#2c3e50"
+            fillColor={item.color}
+            strokeWidth={2}
+          />
+        ))}
+        {area.start && (
+          <>
             <Marker
               coordinate={area.start}
+              title={area.name}
+              pinColor={area.color}
               draggable={true}
               onDrag={(e) => handleMarkerDrag(e.nativeEvent.coordinate, 0)}
             />
-          )}
-          {area.points.map((point, index) => (
-            <Marker
-              key={index}
-              coordinate={point}
-              onPress={() => handleMarkerPress(index + 1)}
-              draggable={true}
-              onDrag={(e) => handleMarkerDrag(e.nativeEvent.coordinate, index + 1)}
-            />
-          ))}
-          {area.points.length >= 3 && (
-            <Polygon
-              coordinates={area.points}
-              strokeColor={area.color}
-              fillColor={area.color + '40'} // Adiciona transparência (alfa) à cor
-              strokeWidth={2}
-            />
-          )}
-        </MapView>
-      </View>
+            {area.points.map((point, index) => (
+              <Marker
+                key={index + 1}
+                coordinate={point}
+                pinColor={area.color}
+                draggable={true}
+                onDrag={(e) => handleMarkerDrag(e.nativeEvent.coordinate, index + 1)}
+                onPress={() => handleMarkerPress(index + 1)}
+              />
+            ))}
+          </>
+        )}
+      </MapView>
     </View>
   );
 };
+
+const joystickSize = 150;
+const joystickButtonSize = 50;
 
 const styles = StyleSheet.create({
   container: {
@@ -202,14 +261,12 @@ const styles = StyleSheet.create({
   sidebar: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 40,
+    padding: 16,
   },
   button: {
     backgroundColor: '#3498db',
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 5,
+    padding: 10,
+    borderRadius: 4,
     marginBottom: 10,
   },
   buttonText: {
@@ -219,28 +276,33 @@ const styles = StyleSheet.create({
   },
   label: {
     marginTop: 10,
+    marginBottom: 5,
     fontWeight: 'bold',
   },
   input: {
     borderColor: '#ccc',
     borderWidth: 1,
-    borderRadius: 5,
-    padding: 5,
+    borderRadius: 4,
+    padding: 8,
     marginBottom: 10,
   },
   colorPalette: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     marginBottom: 10,
   },
   colorSwatch: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
+    width: 20,
+    height: 20,
     marginRight: 5,
+    marginBottom: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
   },
   areaItem: {
+    backgroundColor: '#e74c3c',
     padding: 10,
-    borderRadius: 5,
+    borderRadius: 4,
     marginBottom: 5,
   },
   areaItemText: {
@@ -248,11 +310,40 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  mapContainer: {
-    flex: 4,
+  joystickContainer: {
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  joystick: {
+    width: joystickSize,
+    height: joystickSize,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: joystickSize / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  joystickAxis: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  joystickButton: {
+    width: joystickButtonSize,
+    height: joystickButtonSize,
+    backgroundColor: '#2c3e50',
+    borderRadius: joystickButtonSize / 2,
+    position: 'absolute',
+  },
+  joystickCenter: {
+    width: joystickButtonSize,
+    height: joystickButtonSize,
+    backgroundColor: '#e74c3c',
+    borderRadius: joystickButtonSize / 2,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   map: {
-    flex: 1,
+    flex: 4,
   },
 });
 

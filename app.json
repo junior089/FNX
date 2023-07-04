@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "fnx-app",
-    "slug": "fnx-app",
+    "slug": "app-fnx",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -25,6 +25,18 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3c5659aa-65b7-4854-9d58-f17cfda822be"
+      }
+    },
+    "owner": "rss089",
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3c5659aa-65b7-4854-9d58-f17cfda822be"
     }
   }
 }
